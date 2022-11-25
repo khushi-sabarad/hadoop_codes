@@ -1,0 +1,109 @@
+PIG
+
+[cloudera@quickstart ~]$ pwd
+/home/cloudera
+[cloudera@quickstart ~]$ hadoop fs -ls
+
+# Copy files to read
+[cloudera@quickstart ~]$ hadoop fs -mkdir khushi
+[cloudera@quickstart ~]$ hadoop fs -copyFromLocal /home/cloudera/Desktop/emp.csv khushi/emp.csv
+[cloudera@quickstart ~]$ hadoop fs -copyFromLocal /home/cloudera/Desktop/dept.csv khushi/dept.csv
+[cloudera@quickstart ~]$ hadoop fs -ls khushi
+[cloudera@quickstart ~]$ pig
+grunt> cd khushi
+
+# Load Data
+grunt> A = load 'emp.csv' using PigStorage(',') as (eid: int, ename: chararray, epos:chararray, esal:int,ecom:int, edpno: int);
+grunt> dump A;
+# describe A;
+
+## Aggregate (by row)
+# B = filter A by edpno==20;
+# C = filter A by edpno==20 and epos=='MANAGER’,
+grunt> B = filter A by epos=='ANALYST';
+grunt> dump B;
+grunt> C = filter A by esal>=1500;
+grunt> dump C;
+grunt> D = limit A 5;
+grunt> dump D;
+grunt> E = order A by esal;
+grunt> dump E;
+grunt> F = order A by esal desc;
+grunt> dump F;
+
+# Store Data
+grunt> store F into '/user/cloudera/khushi/pigout/' using PigStorage(',');
+
+# Transform (by column)
+grunt> G = foreach A generate eid;
+grunt> dump G;
+
+# create new column
+grunt> H = foreach A generate * , ecom * 3 as bonus, esal * 5 as incentive;
+grunt> dump H;
+
+# transform columns
+grunt> I = foreach A generate SUBSTRING(ename,0,3);
+grunt> dump I;
+
+# advanced codes
+grunt> J = foreach A generate $0,$1; #the first 2 columns of A
+grunt> dump J;
+
+grunt> K = group A  by edpno;  
+grunt> dump K;
+
+grunt> M = group A by (edpno, epos);
+grunt> dump M;
+
+grunt> SPLIT A into B if edpno==10, C if edpno==20, D if epos=='Manager';
+
+# Joins
+grunt> A = load 'emp.csv' using PigStorage(',') as (eid: int, ename: chararray, epos:chararray, esal:int,ecom:int, edpno: int);
+grunt> B = load 'dept.csv' using PigStorage(',') as (edpno: int, epos:chararray,ecity: chararray);
+
+grunt> C = JOIN A by edpno, B by edpno;
+grunt> dump C;
+grunt> D = foreach C generate A::eid,B::epos;
+grunt> dump D;
+grunt> E = JOIN A by edpno RIGHT OUTER, B by edpno;
+
+# Word Count
+# a different terminal or come out of pig or load with the other datasets
+[cloudera@quickstart ~]$ hadoop fs -copyFromLocal /home/cloudera/Desktop/file.txt khushi/file.txt
+# pig
+grunt> cat khushi/file.txt #read file
+hi
+hi
+hello
+
+grunt> lines = load '/user/cloudera/khushi/file.txt' as (line:chararray);
+grunt> dump lines;
+grunt> token = foreach lines generate TOKENIZE(line);
+grunt> dump token;
+grunt> flats = foreach token generate FLATTEN($0);   
+grunt> dump flats;
+grunt> group_words = group flats by $0;
+grunt> dump group_words;
+grunt> count_words = foreach group_words generate group as word, COUNT($1) as word_occurence;
+grunt> dump count_words;
+
+............................................................
+
+HIVE
+
+[cloudera@quickstart ~]$ hive
+hive> show databases;
+hive> create database khushi;
+hive> use khushi;
+
+# managed tables
+hive> create table emp(eid int, ename string, epos string, esal int, ecom int, edpno int) row format delimited fields terminated by ',';
+hive> describe emp;
+hive> load data local inpath '/home/cloudera/Desktop/emp.csv' into table emp;
+hive> select * from emp;
+
+hive> create table dept (edpno int, epos string, ecity string) row format delimited fields terminated by ',';
+hive> describe dept; 
+hive> load data local inpath '/home/cloudera/Desktop/dept.csv' into table dept;
+hive> select * from dept;
