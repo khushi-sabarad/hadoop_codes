@@ -1,0 +1,17 @@
+HIVE
+
+[cloudera@quickstart ~]$ hive
+hive> show databases;
+hive> create database khushi;
+hive> use khushi;
+
+# managed tables
+hive> create table emp(eid int, ename string, epos string, esal int, ecom int, edpno int) row format delimited fields terminated by ',';
+hive> describe emp;
+hive> load data local inpath '/home/cloudera/Desktop/emp.csv' into table emp;
+hive> select * from emp;
+
+hive> create table dept (edpno int, epos string, ecity string) row format delimited fields terminated by ',';
+hive> describe dept; 
+hive> load data local inpath '/home/cloudera/Desktop/dept.csv' into table dept;
+hive> select * from dept;
